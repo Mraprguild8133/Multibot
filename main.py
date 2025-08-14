@@ -47,7 +47,28 @@ def main():
 
     logger.info("Bot started successfully!")
     
+    # Check if running on Render with webhook support
+    render_external_url = os.getenv("RENDER_EXTERNAL_URL")
+    webhook_mode = os.getenv("USE_WEBHOOK", "true").lower() == "true"
     
+    if render_external_url and webhook_mode:
+        # Webhook mode for Render
+        webhook_url = f"{render_external_url}/webhook"
+        logger.info(f"Starting webhook mode with URL: {webhook_url}")
+        try:
+            port = int(os.getenv("PORT", "50000"))
+            application.run_webhook(
+                listen="0.0.0.0",
+                port=port,
+                webhook_url=webhook_url,
+                url_path="/webhook",
+                secret_token=os.getenv("WEBHOOK_SECRET", ""),
+                allowed_updates=Update.ALL_TYPES
+            )
+        except Exception as e:
+            logger.error(f"Webhook failed: {e}. Falling back to polling mode.")
+            application.run_polling(allowed_updates=Update.ALL_TYPES)
+    else:
         # Use polling mode for local development
         logger.info("Starting polling mode")
         application.run_polling(allowed_updates=Update.ALL_TYPES)
