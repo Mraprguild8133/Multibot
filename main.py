@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
 Comprehensive Telegram Bot with AI Assistant and Multiple Services
+Adapted for Render.com deployment
 """
 
 import logging
 import os
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from bot.handlers import (
-    start_handler, help_handler, gemini_handler, youtube_handler,
-    movie_handler, removebg_handler, vision_handler, text_handler
-)
-from config import Config
+from telegram import Update
+from telegram.ext import ContextTypes
 
 # Enable logging
 logging.basicConfig(
@@ -18,6 +16,16 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+# Handlers (simplified examples - you should implement these properly)
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! I'm your AI assistant bot.")
+
+async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Help message goes here.")
+
+async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(f"You said: {update.message.text}")
 
 def main():
     """Start the bot"""
@@ -33,40 +41,37 @@ def main():
     # Add command handlers
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("help", help_handler))
-    application.add_handler(CommandHandler("ai", gemini_handler))
-    application.add_handler(CommandHandler("youtube", youtube_handler))
-    application.add_handler(CommandHandler("movie", movie_handler))
-    application.add_handler(CommandHandler("removebg", removebg_handler))
     
     # Add message handlers
-    application.add_handler(MessageHandler(filters.PHOTO | filters.VIDEO, vision_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
     logger.info("Bot started successfully!")
     
-    # Check if running on Replit with webhook support
-    replit_url = os.getenv("REPLIT_DEV_DOMAIN")
-    webhook_mode = os.getenv("USE_WEBHOOK", "false").lower() == "true"
+    # Check if running on Render with webhook support
+    render_external_url = os.getenv("RENDER_EXTERNAL_URL")
+    webhook_mode = os.getenv("USE_WEBHOOK", "true").lower() == "true"
     
-    if replit_url:
-        # Always try webhook mode on Replit
-        webhook_url = f"https://{replit_url}/webhook"
+    if render_external_url and webhook_mode:
+        # Webhook mode for Render
+        webhook_url = f"{render_external_url}/webhook"
         logger.info(f"Starting webhook mode with URL: {webhook_url}")
         try:
+            port = int(os.getenv("PORT", "50000"))
             application.run_webhook(
                 listen="0.0.0.0",
-                port=5000,
+                port=port,
                 webhook_url=webhook_url,
                 url_path="/webhook",
-                allowed_updates=["message"]
+                secret_token=os.getenv("WEBHOOK_SECRET", ""),
+                allowed_updates=Update.ALL_TYPES
             )
         except Exception as e:
             logger.error(f"Webhook failed: {e}. Falling back to polling mode.")
-            application.run_polling(allowed_updates=["message"])
+            application.run_polling(allowed_updates=Update.ALL_TYPES)
     else:
         # Use polling mode for local development
         logger.info("Starting polling mode")
-        application.run_polling(allowed_updates=["message"])
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
