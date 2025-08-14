@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Enhanced webhook server with status endpoint and Telegram bot integration
+Enhanced webhook server with status endpoint, static file server, and Telegram bot integration
 Modified to use port 5000 as default
 """
 
 import logging
 import os
 import asyncio
-from tornado.web import Application as TornadoApp, RequestHandler
+from tornado.web import Application as TornadoApp, RequestHandler, StaticFileHandler
 from tornado.platform.asyncio import AsyncIOMainLoop
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from bot.handlers import (
@@ -35,9 +35,10 @@ class StatusHandler(RequestHandler):
                 "YouTube Search", 
                 "Movie Search (TMDB)",
                 "Background Removal",
-                "Enhanced Image Analysis (Vision API + Gemini)"
+                "Enhanced Image Analysis (Vision API + Gemini)",
+                "Static File Server"
             ],
-            "version": "2.0.0"
+            "version": "2.1.0"
         })
 
 class HealthHandler(RequestHandler):
@@ -46,7 +47,7 @@ class HealthHandler(RequestHandler):
         self.write("OK")
 
 async def main():
-    """Start the enhanced webhook server"""
+    """Start the enhanced webhook server with static file serving"""
     # Get bot token from environment
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not bot_token:
@@ -79,11 +80,14 @@ async def main():
     webhook_url = f"https://{render_url}:5000/webhook"  # Using port 5000
     logger.info(f"Starting enhanced webhook server with URL: {webhook_url}")
     
-    # Create web application with status endpoints
+    # Create web application with status endpoints and static file handler
     webapp = TornadoApp([
         (r"/", StatusHandler),
         (r"/status", StatusHandler),
         (r"/health", HealthHandler),
+        (r"/static/(.*)", StaticFileHandler, {"path": "static"}),
+        # Add a default handler that serves index.html for all other paths
+        (r"/(.*)", StaticFileHandler, {"path": "static", "index.html"}),
     ])
     
     try:
@@ -100,7 +104,11 @@ async def main():
             app=webapp
         )
         
-        logger.info("Webhook server started successfully on port 5000")
+        logger.info("Webhook server started successfully on port 5000 with static file support")
+        
+        # Create static directory if it doesn't exist
+        os.makedirs("static", exist_ok=True)
+        logger.info("Static files will be served from ./static directory")
         
         # Keep running
         await application.updater.idle()
