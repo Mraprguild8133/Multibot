@@ -1,0 +1,6 @@
+aiohttp>=3.12.15
+google-cloud-vision>=3.10.2
+google-genai>=1.30.0
+python-telegram-bot[webhooks]>=21.0
+requests>=2.32.4
+telegram>=0.0.1
