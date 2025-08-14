@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Comprehensive Telegram Bot with AI Assistant and Multiple Services
-Adapted for Render.com deployment
+Telegram Bot with AI Assistant - Polling Only Version
+Simplified for Render.com deployment without webhooks
 """
 
 import logging
@@ -17,18 +17,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Handlers (simplified examples - you should implement these properly)
+# Handlers
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello! I'm your AI assistant bot.")
+    await update.message.reply_text("Hello! I'm your AI assistant bot running in polling mode.")
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Help message goes here.")
+    help_text = """
+Available commands:
+/start - Start the bot
+/help - Show this help message
+"""
+    await update.message.reply_text(help_text)
 
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"You said: {update.message.text}")
 
 def main():
-    """Start the bot"""
+    """Start the bot in polling mode only"""
     # Get bot token from environment
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not bot_token:
@@ -42,36 +47,13 @@ def main():
     application.add_handler(CommandHandler("start", start_handler))
     application.add_handler(CommandHandler("help", help_handler))
     
-    # Add message handlers
+    # Add message handler
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_handler))
 
-    logger.info("Bot started successfully!")
+    logger.info("Bot starting in polling mode...")
     
-    # Check if running on Render with webhook support
-    render_external_url = os.getenv("RENDER_EXTERNAL_URL")
-    webhook_mode = os.getenv("USE_WEBHOOK", "true").lower() == "true"
-    
-    if render_external_url and webhook_mode:
-        # Webhook mode for Render
-        webhook_url = f"{render_external_url}/webhook"
-        logger.info(f"Starting webhook mode with URL: {webhook_url}")
-        try:
-            port = int(os.getenv("PORT", "50000"))
-            application.run_webhook(
-                listen="0.0.0.0",
-                port=port,
-                webhook_url=webhook_url,
-                url_path="/webhook",
-                secret_token=os.getenv("WEBHOOK_SECRET", ""),
-                allowed_updates=Update.ALL_TYPES
-            )
-        except Exception as e:
-            logger.error(f"Webhook failed: {e}. Falling back to polling mode.")
-            application.run_polling(allowed_updates=Update.ALL_TYPES)
-    else:
-        # Use polling mode for local development
-        logger.info("Starting polling mode")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    # Run in polling mode (regardless of environment)
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
