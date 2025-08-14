@@ -32,6 +32,6 @@ class StatusHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
 if __name__ == '__main__':
-    server = HTTPServer(('0.0.0.0', 3000), StatusHandler)
-    print(f"Status server running on port 3000")
+    server = HTTPServer(('0.0.0.0', 5000), StatusHandler)
+    print(f"Status server running on port 5000")
     server.serve_forever()
