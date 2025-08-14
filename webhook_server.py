@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced webhook server with status endpoint and Telegram bot integration
+Modified to use port 5000 as default
 """
 
 import logging
@@ -28,7 +29,7 @@ class StatusHandler(RequestHandler):
         self.write({
             "status": "online",
             "bot": "Telegram AI Bot",
-            "webhook": f"https://{os.getenv('REPLIT_DEV_DOMAIN', 'localhost')}/webhook",
+            "webhook": f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME', 'localhost')}:5000/webhook",
             "features": [
                 "AI Assistant (Gemini)",
                 "YouTube Search", 
@@ -69,13 +70,13 @@ async def main():
 
     logger.info("Bot started successfully!")
     
-    # Get Replit URL
-    replit_url = os.getenv("REPLIT_DEV_DOMAIN")
-    if not replit_url:
-        logger.error("REPLIT_DEV_DOMAIN not available")
-        return
+    # Get Render URL (default: *.onrender.com)
+    render_url = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+    if not render_url:
+        logger.error("RENDER_EXTERNAL_HOSTNAME not available. Using localhost.")
+        render_url = "localhost"
         
-    webhook_url = f"https://{replit_url}/webhook"
+    webhook_url = f"https://{render_url}:5000/webhook"  # Using port 5000
     logger.info(f"Starting enhanced webhook server with URL: {webhook_url}")
     
     # Create web application with status endpoints
@@ -90,16 +91,16 @@ async def main():
         await application.initialize()
         await application.start()
         
-        # Set up webhook
+        # Set up webhook (now listening on port 5000)
         await application.updater.start_webhook(
             listen="0.0.0.0",
-            port=5000,
+            port=5000,  # Changed to port 5000
             webhook_url=webhook_url,
             url_path="/webhook",
             app=webapp
         )
         
-        logger.info("Webhook server started successfully")
+        logger.info("Webhook server started successfully on port 5000")
         
         # Keep running
         await application.updater.idle()
